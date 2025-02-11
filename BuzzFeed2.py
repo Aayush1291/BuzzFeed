@@ -1,19 +1,12 @@
 import tkinter as tk
 import customtkinter as ctk
 from tkinter import messagebox 
-from subprocess import call, Popen
 import mysql.connector
-from PIL import ImageTk, Image
 import re
 from bs4 import BeautifulSoup
 import requests
 from tkinter import messagebox
 import webview
-import mysql.connector
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-import webbrowser
 import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -153,9 +146,6 @@ class RegistrationPage(ctk.CTkFrame):
         self.Interest_Label.grid(row=4, column=0, padx=20, pady=10, sticky="w")
 
         self.checkboxes()
-
-        # self.register_button = ctk.CTkButton(self, text='Register Here', command=self.button_event)
-        # self.register_button.grid(row=6, column=1, pady=10)
 
     def checkboxes(self):
         self.checkboxes_list = {
@@ -311,11 +301,7 @@ class Dashboard(ctk.CTk):
 
         self.dailyNewsLabel = ctk.CTkLabel(self.scrollable_frame, text="Daily News", font=('Arial', 25, 'bold'))
         self.dailyNewsLabel.grid(row=0, column=0, sticky='nsew')
-
-        # self.bookmark_button = ctk.CTkButton(self.scrollable_frame, text = 'bookmark', command= self.bookmark_action)
-        # self.bookmark_button.grid(row = 1, column = 3, sticky = 'w')
         
-
         self.fetch_and_display_headlines()
 
     def fetch_and_display_headlines(self):
@@ -330,8 +316,6 @@ class Dashboard(ctk.CTk):
             if headline.text.strip() and title.text.strip() and title.text != 'Ad':
                 href = headline.get('href')
                 a = headline.text.strip() + ' by ' + ' ' +title.text.strip()
-                #title_label = ctk.CTkLabel(self.scrollable_frame, text = title.text.strip(), bg_color= 'green')
-                #title_label.grid(row = x + 1, column = 0)
                 headline_button = ctk.CTkButton(self.scrollable_frame, text=a, width= 30,
                                                 font=ctk.CTkFont(size=20, weight="bold"),
                                                 command=lambda idx=index, href=href: self.show_headline(href))
@@ -339,115 +323,24 @@ class Dashboard(ctk.CTk):
                 headline_button.grid(row=index + 3, column= 0 ,  sticky="nsew", columnspan = 4, pady = (20, 0))
 
                 self.bookmark_radio = ctk.CTkRadioButton(self.scrollable_frame, text = '', bg_color='#0168AA', width = 5 )
-                #self.bookmark_radio.grid(row = index + 3, column = 3, stick = 'ew')
                 self.scrollable_frame.grid_rowconfigure(index, weight= 0)
 
-                #self.checkbox = ctk.CTkCheckBox(self.scrollable_frame, text = '', width = 1)
-                #self.checkbox.grid(row = index + 3, column = 0, sticky = 'e')
-
-    def bookmark_action(self) : 
-        self.headline_dict = {}
-        self.scrollable_frame = ctk.CTkScrollableFrame(self)
-        self.scrollable_frame.grid(row=0, column=2, sticky="nsew", rowspan = 5, columnspan = 5)
-        self.scrollable_frame.grid_columnconfigure(1, weight=1)
-        url = "https://www.bing.com/news"
-        request = requests.get(url)
-        soup = BeautifulSoup(request.text, 'html.parser')
-
-        headlines = soup.find_all('a', class_='title')
-        titles = soup.find_all('div', class_='publogo')
-        x = 2
-        for index, (headline, title) in enumerate(zip(headlines, titles), start=1):
-            if headline.text.strip() and title.text.strip() and title.text != 'Ad':
-                href = headline.get('href')
-                a = headline.text.strip() + ' by ' + ' ' +title.text.strip()
-                #title_label = ctk.CTkLabel(self.scrollable_frame, text = title.text.strip(), bg_color= 'green')
-                #title_label.grid(row = x + 1, column = 0)
-                headline_button = ctk.CTkButton(self.scrollable_frame, text=a, width= 30,
-                                                font=ctk.CTkFont(size=20, weight="bold"),
-                                                command=lambda idx=index, href=href: self.show_headline(href))
-                headline_button._text_label.configure(wraplength=499)
-                headline_button.grid(row=index + 3, column= 0 ,  sticky="nsew", columnspan = 4, pady = (20, 0))
-
-                #self.bookmark_radio = ctk.CTkRadioButton(self.scrollable_frame, text = '', bg_color='#0168AA', width = 5 )
-                #self.bookmark_radio.grid(row = index + 3, column = 3, stick = 'ew')
-                self.scrollable_frame.grid_rowconfigure(index, weight= 1)
-
-                self.check_var = ctk.StringVar(value="off")
-                self.checkbox = ctk.CTkCheckBox(self.scrollable_frame, text = '', width = 1,  command = lambda sv = self.check_var, a = a, href = href: self.checkbox_event(sv, a, href), 
-                                                variable=self.check_var, onvalue="on", offvalue="off")
-                self.checkbox.grid(row = index + 3, column = 1, sticky = 'e')
-                self.headline_dict[a] = self.check_var
-
-        self.confirm_bookmark = ctk.CTkButton(self.scrollable_frame, text = 'bookmark confirm ', command= self.bookmark_confirm)
-        self.confirm_bookmark.grid(row = index, column = 1, sticky = 'e', pady = 10)
-        
-
-    def checkbox_event(self, var, headline, href):
-        #print("checkbox for ", var.get(), headline)
-        
-        if var.get() == "on":
-            self.headline_list.append(headline)
-            self.href_list.append(href)
-        if var.get() == 'off':
-            if headline in self.headline_list and href in self.href_list:
-                self.headline_list.remove(headline)
-                self.href_list.remove(href)
-
-
-    def bookmark_confirm(self):
-        
-        # print(self.headline_list)
-        # print(self.href_list)
-        # for i in range(len(self.headline_list)):
-        #     print(self.headline_list[i])
-        #     print(self.href_list[i])
-        #     print('\n')
-
-        self.insert_in_database()
-        messagebox.showinfo(message="Bookmarks confirmed")
-        self.initframes()
-        self.initcomponents()
-        self.headline_list = []
-        self.href_list = []
-        # self.bookmark_button = ctk.CTkButton(self.scrollable_frame, text = 'bookmark', command= self.bookmark_action)
-        # self.bookmark_button.grid(row = 1, column = 3, sticky = 'w')
-        # self.fetch_and_display_headlines()
-
-    def insert_in_database(self):
-        self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp'
-        )
-        # print(self.db)
-        self.cursor = self.db.cursor()
-        query = "INSERT INTO bookmarks (user_id, headline, href) VALUES (%s, %s, %s)"
-        for headline, href in zip(self.headline_list, self.href_list):
-            self.cursor.execute(query, (self.login_number, headline, href))
-        self.db.commit()
-
     def search_news(self):
-        pass
         self.destroy()
         search_app = SearchEmail(self.email_id, self.login_number)
         search_app.mainloop()
 
     def news_by_category(self):
-        pass
         self.destroy()
         news_app = NewsCategory(self.email_id, self.login_number)
         news_app.mainloop()
 
     def infographics(self):
-        pass
         self.destroy()
         news_app = NewsAppInfographics(self.email_id, self.login_number)
         news_app.mainloop()
 
     def show_headline(self, link):
-        pass
         webview.create_window('News Headline', link)
         webview.start()
 
@@ -459,7 +352,6 @@ class Dashboard(ctk.CTk):
 
 
     def loginPage(self):
-
         self.destroy()
         App().mainloop()
 
@@ -518,64 +410,7 @@ class SearchEmail(ctk.CTk):
         self.SearchButton = ctk.CTkButton(self.scrollable_frame, text = 'search', font=ctk.CTkFont(weight="bold"))
                                         #    command= lambda : self.getnews())
         self.SearchButton.grid(row = 1, column = 1, sticky = 'ew', pady = 20, padx = 5)
-
-        # self.GetEmailButton = ctk.CTkButton(self.scrollable_frame, text = 'Get this News on Email', font=ctk.CTkFont(weight="bold"), command = self.sendemail) 
-    
-
-    def getnews(self):
-
-        query = self.SearchEntry.get()
-        if query == '':
-            messagebox.showinfo('Inavlid Query',message='Empty Query, Please enter something')
-
-        if query.isdigit():
-            messagebox.showinfo('Invalid Query', message= 'Seacrh Query cannot consist of numbers')
-
-        else :
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"}
-            url = "https://www.bing.com/news/search?q={}"
-            html = requests.get(url.format(query), headers=headers)
-            soup = BeautifulSoup(html.text, "lxml")
-            x = 2
-            for result in soup.select('.card-with-cluster'):
-                headline = result.select_one('.title')
-                if headline.text.strip():
-                    href = headline.get('href')
-                    self.headlineButton = ctk.CTkButton(self.scrollable_frame, text = headline.text.strip(), width=30,
-                                                        font=ctk.CTkFont(size=20, weight="bold"), 
-                                                        command= lambda href = href : self.GotoNews(href))
-                    self.headlineButton._text_label.configure(wraplength=499)
-                    self.headlineButton.grid(row = x, column = 0, pady = 5, sticky = 'nsew', columnspan = 5 )
-                    x += 1
-                    self.headlines_list.append(headline.text.strip())
-                    self.links_list.append(href)
-            self.GetEmailButton.grid(row = x + 1 , column = 0, columnspan = 5, pady = 10)
-
-    def sendemail(self):
-        # input_email = ctk.CTkInputDialog(text="Enter your email to confirm")
-        
-        my_email = "anewsinsights@gmail.com"
-        password = "hzxdwusuoiyekvso"
-        to_email = self.email_address
-        connection = smtplib.SMTP("smtp.gmail.com", 587)
-        connection.starttls()
-        connection.login(user=my_email, password=password)
-        # connection.sendmail(from_addr=my_email, to_addrs="yashbav24@gmail.com", msg="Hello there")
-        msg = MIMEMultipart()
-        msg['From'] = my_email
-        msg['To'] = to_email
-        msg['Subject'] = "Your Daily News Update" 
-
-        body = "Here are the latest news headlines:\n\n "
-        for headline, link in zip(self.headlines_list, self.links_list):
-            body += f"\n<b>{headline}</b><br><a href='{link}'>{link}</a><br><br>"
-        
-        msg.attach(MIMEText(body, 'html'))
-
-        connection.sendmail(from_addr=my_email, to_addrs=to_email, msg=msg.as_string())
-        messagebox.showinfo("Success", "Email sent successfully!")
-        connection.quit()
-
+ 
     def dashboard(self):
         email = self.email_address
         login_number = self.login_number
@@ -600,10 +435,6 @@ class SearchEmail(ctk.CTk):
         news_app = NewsAppDashboardProfile(self.login_number)
 
         news_app.mainloop()
-
-    def GotoNews(self, link):
-        webview.create_window('News Headline', link)
-        webview.start()
 
     def loginPage(self):
         self.destroy()
@@ -668,12 +499,8 @@ class NewsCategory(ctk.CTk):
         self.NewsCategory = ctk.CTkLabel(self.scrollable_frame, text = "News category", font=('Arial', 25, 'bold'))
         self.NewsCategory.grid(row = 0, column = 0, sticky = 'nsew', pady = 15)
 
-
-
         self.checkboxes()
       
-
-
     def state_of_checkoox(self, index):
         checkboxes_list = [self.SportsCheckbox, self.FinanceCheckbox, self.EntertainmentCheckbox, self.WorldNewsbox, 
                       self.Politicsbox, self.SciTechbox]
@@ -688,7 +515,6 @@ class NewsCategory(ctk.CTk):
             for checkbox in checkboxes_list:
                 if checkbox != current_checkbox:
                     checkbox.configure(state='disabled')
-            # self.getnewsbycategory(index)
         else :
             
             self.CheckBoxLabel.destroy()
@@ -737,45 +563,6 @@ class NewsCategory(ctk.CTk):
                                               command=lambda :self.state_of_checkoox(5))
         self.SciTechbox.grid(row = 2, column = 2, pady = 15, padx = 5)
     
-
-
-
-    def getnewsbycategory(self, index):
-        checkbox_text = ["Sports", "Finance", "Entertainment", "World", "Politics", "Sci/Tech"]
-        
-        format_list = ['Sports', 'Business', 'Entertainment', 'World', 'Politics', 'Sci%2fTech']
-        url = f"https://www.bing.com/news/search?q={format_list[index]}"
-        print(url)
-        # testurl = "https://www.bing.com/news/search?q={Sports}"
-
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"}
-
-        request = requests.get(url)
-        
-        soup = BeautifulSoup(request.text, 'lxml')
-
-        x = 4
-        headlines = soup.find_all('div', class_ = 'na_t news_title ns_big')
-        links = soup.find_all('a', class_='news_fbcard wimg')
-        results = soup.select('a', class_= 'news_fbcard wimg')
-
-
-
-        for headline, link in zip(headlines, links):
-            href = link.get('href')
-            self.headlineButton = ctk.CTkButton(self.scrollable_frame, text = headline.text.strip(), width=30,
-                                            font=ctk.CTkFont(size=20, weight="bold"), 
-                                             command= lambda href = href : self.show_headline(href))
-            self.headlineButton._text_label.configure(wraplength=499)
-            self.headlineButton.grid(row = x, column = 0, pady = 5, sticky = 'nsew', columnspan = 5 )
-            self.bookmark_radio = ctk.CTkRadioButton(self.scrollable_frame, text = '', bg_color='#0168AA', width = 5, fg_color= 'white' )
-            self.bookmark_radio.grid(row =x, column = 3, stick = 'ew', )
-            x += 1
-
-
-    def GotoNews(self, link):
-         webbrowser.open(link)
-
     def dashboard(self):
         self.destroy()
         print("News Category : ", self.login_number, self.email_id)
@@ -792,7 +579,6 @@ class NewsCategory(ctk.CTk):
         news_app.mainloop()
 
     def show_headline(self, link):
-
         webview.create_window('News Headline', link)
         webview.start()
 
@@ -806,27 +592,20 @@ class NewsCategory(ctk.CTk):
         self.destroy()
         App().mainloop()
 
-
-
 class NewsAppDashboardProfile(ctk.CTk):
     def __init__(self, login_number):
         super().__init__()
-
         self.title("News App Dashboard")
         self.geometry(f"{1000}x{600}")
         self.resizable(False, False)
-
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=1)
         self.grid_rowconfigure((0, 1), weight=1)
         self.initframes()
         self.initcomponents()
-        
-
         self.login_number = login_number
         print("Profile : " ,self.login_number)
         self.profilecomponents(self.login_number)
-
         self.x = 0
         self.topics_selected = []
         self.email_address = None
@@ -838,7 +617,6 @@ class NewsAppDashboardProfile(ctk.CTk):
         self.scrollable_frame = ctk.CTkScrollableFrame(self)
         self.scrollable_frame.grid(row=0, column=2, sticky="nsew", rowspan = 10, columnspan = 10)
         self.scrollable_frame.grid_columnconfigure(1, weight=0)
-
     def initcomponents(self):
         self.myprofile_label = ctk.CTkLabel(self.sidebar_frame, text="My Profile", font = ('Arial', 20, 'bold'))
         self.myprofile_label.grid(row = 0, column = 0, pady = 20)
@@ -857,9 +635,6 @@ class NewsAppDashboardProfile(ctk.CTk):
         self.infographics_button = tk.Button(self.sidebar_frame, text="Infographics", height=3, font = ('Arial', 14, 'bold'), background='#14476E', foreground= 'white',
                                              command=self.infographics)
         self.infographics_button.grid(row=5, column=0, sticky= 'new', pady = 15)
-
- 
-
         self.Logout_button = tk.Button(self.sidebar_frame, text="Log out", height=1, font = ('Arial', 12, 'bold'), background='#14497E', foreground= 'white',
                                        command=self.loginPage)
         self.Logout_button.grid(row=7, column=0, sticky= 'ws', pady = 0)
@@ -871,159 +646,9 @@ class NewsAppDashboardProfile(ctk.CTk):
         self.scrollable_frame.grid_columnconfigure(0, weight=0)
         self.scrollable_frame.grid_columnconfigure(1, weight=1)
         self.scrollable_frame.grid_columnconfigure(2, weight=1)
-        # image_url = 'profilepic.jpeg'
-        # img = ImageTk.PhotoImage(Image.open(image_url))
-        # profile_label = ctk.CTkLabel(self.scrollable_frame, image = img, text= ' ')
-        # profile_label.grid(row = 1, column= 0, padx = 15, pady = 20, rowspan = 2)
-       
-        # self.image_uploader = ctk.CTkButton(self.scrollable_frame, text='upload image', command= self.image_selector)
-        # self.image_uploader.grid(row = 3, column = 0)
-
-
-
         profile_name_label = ctk.CTkLabel(self.scrollable_frame, text= " Name : ", font = ('serif', 19, 'bold'))
         profile_name_label.grid(row = 1, column = 1, sticky = 'nw', pady = 15)
         self.fetch_name(login_number)
-        # profile_no_of_articles_label = ctk.CTkLabel(self.scrollable_frame, text= "No of Articles Read :  2", font = ('serif', 19, 'bold'))
-        # profile_no_of_articles_label.grid(row = 2, column = 1, sticky = 'nw',  padx = 5)
-
-
-
-        # self.option_tab = ctk.CTkTabview(self.scrollable_frame, width= 50, height= 455, border_color='white')
-        # self.option_tab.add("My News")
-        # self.option_tab.add("Bookmarks")
-
-        # self.option_tab.grid(row = 4, column = 0, columnspan = 5, rowspan = 5, sticky = 'nsew')
-        # self.fetch_bookmarks(login_number)
-        # self.fetch_mynews(login_number)
-        # self.bookmarks_components(login_number)
-        # self.my_news_components()
-
-    def image_selector(self):
-        image = ctk.filedialog.askopenfilename()
-        # user_img = ImageTk.PhotoImage(Image.open(image))
-        orignal_image = Image.open(image)
-        resized_image = orignal_image.resize((253, 243))
-        user_img = ImageTk.PhotoImage(resized_image)
-        # profile_label = ctk.CTkLabel(self.scrollable_frame, image = user_img, text= ' ')
-        # profile_label.grid(row = 1, column= 0, padx = 15, pady = 20, rowspan = 2)
-
-    def bookmarks_components(self, num):
-        pass
-        # self.button = ctk.CTkButton(master = self.option_tab.tab("Bookmarks"), text= "test button")
-        # self.button.grid(row = 0, column = 0, sticky = 'nsew')
-        # self.login_number = num
-        # if len(self.headline_list) > 0:
-        #     x = 2
-        #     for index, (headline, href) in enumerate(zip(self.headline_list, self.href_list), start=1):
-        #         a = headline 
-
-        #         headline_button = ctk.CTkButton(master = self.option_tab.tab("Bookmarks"), text=a, width= 30,
-        #                                         font=ctk.CTkFont(size=20, weight="bold"),
-        #                                         command=lambda idx=index, href=href: self.show_headline(href))
-        #         headline_button._text_label.configure(wraplength=499)
-        #         headline_button.grid(row=index + 3, column= 0 ,  sticky="nsew", columnspan = 4, pady = (20, 0))
-
-                    
-    def my_news_components(self):
-        pass
-        # self.topics = []
-
-        # def my_news_popup():
-        #     topic_input = ctk.CTkInputDialog(text="Enter Topics you wanna add")
-        #     input_topic = topic_input.get_input()
-        #     if input_topic: 
-        #         self.topics.append(input_topic)
-        #     print(self.topics)
-        #     topic_input.destroy()
-        #     add_topics()
-
-        # self.tags_button = ctk.CTkButton(master = self.option_tab.tab("My News"), text = 'Add Topics', width = 5, command=my_news_popup)
-        # self.tags_button.grid(row = 0, column = 0, sticky  = 'n')
-        
-        # def add_topics():
-        #     # print(self.x)
-        #     if self.topics:
-        #         for topic in self.topics :
-        #             print(self.x)
-        #             if topic not in self.topics_selected :    
-        #                 topic_Label = ctk.CTkLabel(master = self.option_tab.tab("My News"), text = topic, font= ('Arial', 20, 'bold') )
-        #                 topic_Label.grid(row = self.x + 2, column = 0, sticky = 'nw')
-        #                 line_label = ctk.CTkLabel(master = self.option_tab.tab("My News"), text = '-'*50)
-
-        #                 line_label.grid(row = self.x + 1 , column = 0, sticky = 'nsew')
-        #                 self.getnews(topic)
-        #                 self.topics_selected.append(topic)
-        #                 self.x = self.x + 10
-        #             # else :
-        #             #     messagebox.showerror(message="Topic Already selected")
-
-        #     self.update()
-
-    def getnews(self, query):
-        headlines_list = []
-        news_link_list = []
-        no = 5
-        if query == '':
-            messagebox.showinfo('Inavlid Query',message='Empty Query, Please enter something')
-
-        if query.isdigit():
-            messagebox.showinfo('Invalid Query', message= 'Seacrh Query cannot consist of numbers')
-
-        else :
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"}
-            url = "https://www.bing.com/news/search?q={}"
-            html = requests.get(url.format(query), headers=headers)
-            soup = BeautifulSoup(html.text, "lxml")
-
-            for result in soup.select('.card-with-cluster'):
-                headline = result.select_one('.title')
-                if headline.text.strip():
-                    href = headline.get('href')
-                    self.headlineButton = ctk.CTkButton(master = self.option_tab.tab("My News"), text = headline.text.strip(),
-                                                         font= ('Arial', 20, 'bold'), 
-                                                        command= lambda href = href : self.GotoNews(href))
-                    self.headlineButton._text_label.configure(wraplength=499)
-                    self.headlineButton.grid(row = self.x + 10, column = 0, pady = (20, 0), sticky = 'nsew', columnspan = 6)
-                    # print(headline.text.strip())
-                    headlines_list.append(headline.text.strip())
-                    news_link_list.append(href)
-                
-                    print(self.x)
-                    self.x += 1
-            
-                no -= 1
-                if no == 0:
-                    break
-            self.update()
-            # self.GetEmailButton.grid(row = x , column = 0, columnspan = 5, pady = 10)
-        print(self.topics)
-        print(self.topics[-1])
-        print(headlines_list)
-        print(self.login_number)
-        self.add_in_topics_database(self.login_number, self.topics[-1], headlines_list, news_link_list)
-
-    def add_in_topics_database(self, login_number, topic, headlines_list, news_link_list):
-        self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp'
-        )
-        self.cursor3 = self.db.cursor()
-
-        query4 = "INSERT into topics (user_id, topic_name, selected_news_headline, selected_news_link, emailed) VALUES (%s, %s, %s, %s, %s)"
-        for headline, href in zip(headlines_list, news_link_list):
-            self.cursor3.execute(query4, (login_number , topic, headline, href, 0 ) )
-        self.db.commit()
-
-    def show_headline(self, link):
-
-        webview.create_window('News Headline', link)
-        webview.start()
-
-    def GotoNews(self, link):
-        pass
 
     def fetch_name(self, login_number):
         self.db = mysql.connector.connect(
@@ -1043,92 +668,13 @@ class NewsAppDashboardProfile(ctk.CTk):
             profile_email_label.grid(row=2, column=1, sticky='nw', pady=15)
             profile_interest_label = ctk.CTkLabel(self.scrollable_frame, text=" Interest : " + interest, font=('serif', 19, 'bold'))
             profile_interest_label.grid(row=3, column=1, sticky='nw', pady=15)
-        # name_tuple = self.cursor1.fetchone()
-        # if name_tuple:  
-        #     name = name_tuple[0]
-        #     self.email_address = name_tuple[1]  
-        #     print(self.email_address)
-        #     profile_name_label = ctk.CTkLabel(self.scrollable_frame, text=" Name : " + name, font=('serif', 19, 'bold'))
-        #     profile_name_label.grid(row=1, column=1, sticky='nw', pady=15)
         self.cursor1.close()
         self.db.close()
-
-    def fetch_bookmarks(self, login_number):
-
-        
-        self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp'
-        )
-
-        self.cursor = self.db.cursor()
-
-        query = "SELECT headline, href from bookmarks where user_id = %s"
-        
-        self.cursor.execute(query, (login_number,))    
-
-        self.headline_list = []
-        self.href_list = []
-
-        for headline, href in self.cursor:
-            self.headline_list.append(headline)
-            self.href_list.append(href)
-
-        self.cursor.close()
-        self.db.close()
-
-    def fetch_mynews(self, login_number):
-        pass
-        # self.x = 0
-        # self.db = mysql.connector.connect(
-        #     host = 'localhost',
-        #     user = 'root',
-        #     password = 'aayush1291',
-        #     database = 'newsapp'
-        # )
-
-        # self.cursor4 = self.db.cursor()
-        # query4 = "SELECT topic_name,  selected_news_headline, selected_news_link from topics where user_id = %s"
-        # self.cursor4.execute(query4, (login_number,))    
-        # # print(self.cursor4.fetchall())
-        # previous_topic = None
-
-        # # for topic, headline, href in self.cursor4.fetchall():
-        # #     if topic != previous_topic:
-        # #         topic_Label = ctk.CTkLabel(master=self.option_tab.tab("My News"), text=topic, font=('Arial', 20, 'bold'))
-        # #         topic_Label.grid(row= self.x + 2, column=0, sticky='nw')
-        # #         # line_label = ctk.CTkLabel(master=self.option_tab.tab("My News"), text='-' * 50)
-        # #         # line_label.grid(row=self.x + 1, column=0, sticky='nsew')
-        # #         self.x += 10
-        # #         previous_topic = topic
-
-        # #     headline_button = ctk.CTkButton(master=self.option_tab.tab("My News"), text=headline,
-        # #                                      font=('Arial', 20, 'bold'), command=lambda h=href: self.GotoNews(h))
-        # #     headline_button._text_label.configure(wraplength=499)
-        # #     headline_button.grid(row=self.x + 10, column=0, pady=(20, 0), sticky='nsew', columnspan=6)
-        # #     self.x += 1
-        # done_topic = []  # List to keep track of displayed topics
-
-        # for topic, headline, href in self.cursor4.fetchall():
-        #     if topic not in done_topic:  # Check if topic has been displayed already
-        #         topic_label = ctk.CTkLabel(master=self.option_tab.tab("My News"), text=topic, font=('Arial', 20, 'bold'))
-        #         topic_label.grid(row=self.x + 3, column=0, sticky='nw', pady = 20)
-        #         done_topic.append(topic)  # Add topic to the list
-        #         self.x += 1  # Increment row index
-
-        #     headline_button = ctk.CTkButton(master=self.option_tab.tab("My News"), text=headline,
-        #                                      font=('Arial', 20, 'bold'), command=lambda h=href: self.GotoNews(h))
-        #     headline_button._text_label.configure(wraplength=499)
-        #     headline_button.grid(row=self.x + 3, column=0, pady=(20, 0), sticky='nsew', columnspan=6)
-        #     self.x += 1  # Increment row index for news headline button
 
     def dashboard(self):
         self.fetch_name(self.login_number)
         email = self.email_address
         self.destroy()
-        # Popen(['python', 'dashboard4.py', self.login_number])
         print(email)
         news_app = Dashboard(None, self.login_number, email)
         news_app.mainloop()
@@ -1154,25 +700,20 @@ class NewsAppDashboardProfile(ctk.CTk):
         news_app = NewsAppInfographics(email, self.login_number)
         news_app.mainloop()
 
-
     def loginPage(self):
         self.destroy()
         App().mainloop()
-
 
     def GotoNews(self, link):
         webview.create_window('News Headline', link)
         webview.start()
 
-
 class NewsAppInfographics(ctk.CTk):
     def __init__(self, email_id, login_number):
         super().__init__()
-
         self.title("News App Dashboard")
         self.geometry(f"{1000}x{600}")
         self.resizable(False, False)
-
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=1)
         self.grid_rowconfigure((0, 1), weight=1)
@@ -1180,7 +721,6 @@ class NewsAppInfographics(ctk.CTk):
         self.initcomponents()
         self.login_number = login_number
         self.email_address = email_id
-
 
     def initframes(self):
         self.sidebar_frame = ctk.CTkFrame(self, width=150, corner_radius=0)
@@ -1216,12 +756,8 @@ class NewsAppInfographics(ctk.CTk):
 
         self.topics_label = ctk.CTkLabel(self.scrollable_frame, text="Topics", font=('Arial', 25, 'bold'))
         self.topics_label.grid(row=0, column=0, sticky='nsew', padx = 10)
-
-
         self.economics_button = tk.Button(self.scrollable_frame, text = 'Economics', font = ('Helavetica', 22), background='white', command=self.show_economics)
         self.economics_button.grid(row = 1, column= 0,  pady = 15, columnspan= 5, rowspan= 5, sticky='nsew')
-        # self.ent_button = tk.Button(self.scrollable_frame, text = 'Entertainment', font = ('Helavetica', 22), background='white', command=self.show_entartiment)
-        # self.ent_button.grid(row = 11, column= 0,  pady = 15, columnspan= 5, rowspan= 10, sticky='nsew')
         self.health_button = tk.Button(self.scrollable_frame, text = 'Health & Nutrition', font = ('Helavetica', 22), background='white', command=self.show_health)
         self.health_button.grid(row = 11, column= 0,  pady = 15, columnspan= 5, rowspan= 10, sticky='nsew')
         self.conflict_button = tk.Button(self.scrollable_frame, text = 'Fraglity, Conflict & Violence', font = ('Helavetica', 22), background='white', command=self.show_fragility)
@@ -1229,7 +765,6 @@ class NewsAppInfographics(ctk.CTk):
         self.env_button = tk.Button(self.scrollable_frame, text = 'Environment & Resources', font = ('Helavetica', 22), background='white', command=self.show_environment)
         self.env_button.grid(row = 31, column= 0,  pady = 15, columnspan= 5, rowspan= 10, sticky='nsew')
         
-
     def show_economics(self):
         self.gdp_button = ctk.CTkButton(self.scrollable_frame, text = 'GDP per Capita of India (1960-2022) ', font = ('Helavetica', 15), command=self.display_graph_gdp)
         self.gdp_button.grid(row = 52, column = 1, sticky = 'nsew', padx = 5, pady = 5, rowspan = 2)
@@ -1238,7 +773,6 @@ class NewsAppInfographics(ctk.CTk):
         self.une_button = ctk.CTkButton(self.scrollable_frame, text = 'Unemployement, female (% of female labor force)', font = ('Helavetica', 15), command=self.display_graph_une)
         self.une_button.grid(row = 56, column = 1, sticky = 'nsew', padx = 5, pady = 5, rowspan = 2)
 
-
     def show_health(self):
         self.birth_rate_button = ctk.CTkButton(self.scrollable_frame, text = 'Birth rate, crude (per 1,000 people) ', font = ('Helavetica', 15), command=self.display_birth_rate)
         self.birth_rate_button.grid(row = 52, column = 1, sticky = 'nsew', padx = 5, pady = 5, rowspan = 2)
@@ -1246,6 +780,7 @@ class NewsAppInfographics(ctk.CTk):
         self.hiv_button.grid(row = 54, column = 1, sticky = 'nsew', padx = 5, pady = 5, rowspan = 2)
         self.sanitation_button = ctk.CTkButton(self.scrollable_frame, text = 'People using safely managed sanitation services (% of population)', font = ('Helavetica', 15), command= self.display_sanitation)
         self.sanitation_button.grid(row = 56, column = 1, sticky = 'nsew', padx = 5, pady = 5, rowspan = 2)
+
     def show_fragility(self):
         self.age_button = ctk.CTkButton(self.scrollable_frame, text = 'Age dependency ratio (% of working-age population) ', font = ('Helavetica', 15), command=self.display_age)
         self.age_button.grid(row = 52, column = 1, sticky = 'nsew', padx = 5, pady = 5, rowspan = 2)
@@ -1262,8 +797,6 @@ class NewsAppInfographics(ctk.CTk):
         self.electricity_button = ctk.CTkButton(self.scrollable_frame, text = 'Access to electricity (% of population)', font = ('Helavetica', 15), command=self.display_graph)
         self.electricity_button.grid(row = 56, column = 1, sticky = 'nsew', padx = 5, pady = 5, rowspan = 2)
 
-
-
     def display_graph_gdp(self):
         title = 'Per Captia GDP of India (1960-2022)'
         list_x= ["1960","1961","1962","1963","1964","1965","1966","1967","1968","1969","1970","1971","1972","1973","1974","1975","1976","1977","1978","1979","1980","1981","1982","1983","1984","1985","1986","1987","1988","1989","1990","1991","1992","1993","1994","1995","1996","1997","1998","1999","2000","2001","2002","2003","2004","2005","2006","2007","2008","2009","2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020","2021","2022"]
@@ -1271,18 +804,21 @@ class NewsAppInfographics(ctk.CTk):
 
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
+
     def display_graph_inflation(self):
         title = 'Inflation, consumer prices (annual % 1960- 2022)'
         list_x = [1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022]
         list_y = [1.779877847, 1.695212939, 3.632214971, 2.946161357, 13.35526115, 9.474758592, 10.80184835, 13.06220248, 3.237412426, -0.58413661, 5.09226162, 3.079938684, 6.442097462, 16.94081598, 28.59873408, 5.748430298, -7.633947634, 8.307470092, 2.523048757, 6.275683368, 11.34607348, 13.1125469, 7.890742794, 11.8680813, 8.318907119, 5.556424232, 8.729720727, 8.801125813, 9.383471862, 7.074280029, 8.971232503, 13.87024618, 11.78781704, 6.326890488, 10.24793556, 10.22488616, 8.977152338, 7.164252115, 13.23083898, 4.66982038, 4.00943591, 3.779293122, 4.297152039, 3.805858995, 3.767251735, 4.24634362, 5.796523376, 6.372881356, 8.349267049, 10.88235294, 11.98938992, 8.911793365, 9.478996914, 10.01787847, 6.665656719, 4.906973441, 4.948216341, 3.328173375, 3.938826467, 3.729505735, 6.623436776, 5.131407472, 6.699034141]
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
+
     def display_graph_une(self):
         title = 'Unemployement, female (% of female labor force)'
         list_x = [1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
         list_y = [6.724, 6.724, 6.724, 6.718, 6.921, 7.123, 7.331, 7.538, 7.741, 7.945, 8.151, 8.363, 8.564, 8.765, 8.964, 8.868, 8.772, 8.683, 8.587, 8.49, 8.392, 8.299, 8.205, 8.106, 8.006, 7.907, 7.812, 7.717, 6.075, 6.751, 5.39, 4.586, 3.935]
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
+
     def display_birth_rate(rate):
         title = 'Birth rate, crude (per 1,000 people)'
         list_x = [1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
@@ -1301,7 +837,6 @@ class NewsAppInfographics(ctk.CTk):
         title = 'People using safely managed sanitation services (% of population)'
         list_x = [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022]
         list_y = [6.096392313, 7.399400388, 8.782426344, 10.17746712, 12.56089644, 14.66108933, 16.76951846, 18.96300541, 21.16935265, 23.38820895, 25.6195429, 27.86325391, 30.11935259, 32.38714535, 34.66598361, 36.95517413, 39.25401861, 41.47564339, 43.62501301, 45.76642277, 47.89959768, 50.0241473, 52.1399331]
-
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
 
@@ -1309,7 +844,6 @@ class NewsAppInfographics(ctk.CTk):
         title = 'Age dependency ratio (% of working-age population) '
         list_x = [1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969, 1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022]
         list_y = [77.97427802, 78.97333965, 79.99751809, 81.01273642, 81.64474209, 81.79666486, 81.76475905, 81.59826344, 81.35813691, 81.07479441, 80.72556962, 80.38548167, 80.06327477, 79.7450559, 79.46074039, 79.15337644, 78.82077626, 78.41968483, 77.92428954, 77.4335794, 76.99499961, 76.61424931, 76.23945739, 75.83359284, 75.43863173, 75.05170971, 74.65804987, 74.22579135, 73.71668508, 73.15103192, 72.55431466, 71.95759784, 71.38078271, 70.80648607, 70.18678835, 69.50172819, 68.74888943, 67.95142111, 67.13037766, 66.27117497, 65.40816687, 64.55324323, 63.70378872, 62.85041436, 61.96232145, 61.05733454, 60.12096467, 59.15501643, 58.20561121, 57.28110818, 56.35915817, 55.44659178, 54.55749587, 53.69513485, 52.89442862, 52.14810069, 51.40973408, 50.68482818, 50.01892798, 49.40102931, 48.77554811, 48.12632543, 47.49861638]
-
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
 
@@ -1317,7 +851,6 @@ class NewsAppInfographics(ctk.CTk):
         title = 'Intentional homicides (per 100,000 people)'
         list_x = [1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021]
         list_y = [5.073455128, 5.464250011, 5.474814984, 5.175898191, 5.020618843, 4.810432851, 4.770964721, 4.730752602, 4.825761843, 4.592118937, 4.545627523, 4.302247607, 4.164204411, 3.967281189, 4.091476642, 3.905550671, 3.835039683, 3.812920257, 3.811856573, 3.7448918, 3.744921001, 3.788104108, 3.72526295, 3.55331583, 3.62257613, 3.354306716, 3.161426203, 3.028882799, 2.993783858, 2.92666093, 2.911155454, 2.936278893]
-
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
 
@@ -1325,7 +858,6 @@ class NewsAppInfographics(ctk.CTk):
         title = 'Refugee population in asylums'
         list_x = [1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022]
         list_y = [3510, 5010, 6930, 7200, 6720, 6440, 6720, 6645, 9549, 212743, 210569, 258372, 262802, 258342, 227481, 233371, 223072, 185516, 180031, 170940, 169548, 168853, 164754, 162683, 139284, 158358, 161534, 184539, 185318, 184814, 185118, 185644, 188391, 199931, 201379, 197848, 197142, 195887, 195103, 195373, 212413, 242835]
-
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
 
@@ -1339,14 +871,12 @@ class NewsAppInfographics(ctk.CTk):
         title = 'Annual freshwater withdrawals, total (% of internal resources)'
         list_x =  [1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982, 1983, 1984, 1985, 1986, 1987, 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020]
         list_y = [26.27939142, 27.08644537, 27.89349931, 28.70055325, 29.50760719, 30.31466113, 31.12171508, 31.92876902, 32.73582296, 33.5428769, 34.34993084, 34.395574, 34.44121715, 34.4868603, 34.53250346, 34.57814661, 35.34162863, 36.10511065, 36.86859267, 37.63207469, 38.39555671, 39.15903873, 39.92251037, 40.68599585, 41.44948479, 42.2129668, 43.25445989, 44.29595297, 45.33744606, 43.23926003, 43.49583333, 43.75240664, 44.00897994, 44.26555325, 44.52212656, 44.77869986, 44.77869986, 44.77869986, 44.77869986, 44.77869986, 44.77869986, 44.77869986, 44.77869986, 44.77869986, 44.77869986, 44.77869986]
-
         graph = Graph(title, list_x, list_y)
         graph.mainloop()
     def display_electricity(self):
         title = 'Access to electricity (% of population)'
         list_x = [1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020]
         list_y = [50.9, 49.81130981, 51.40877533, 53.00352097, 54.59486389, 56.18213272, 60.1, 60.29283905, 62.00543976, 62.3, 65.41201019, 64.4, 68.8404541, 67.9, 72.3407135, 74.11849213, 75, 76.3, 79.51678467, 79.9, 83.13139343, 85.13391113, 88, 89.58630371, 91.79415894, 95.7, 95.88594055, 96.5, 99.57252502]
-
         graph = Graph(title, list_x, list_y)
         graph.mainloop()   
 
@@ -1367,8 +897,6 @@ class NewsAppInfographics(ctk.CTk):
         self.destroy()
         news_app = NewsCategory(self.email_id, self.login_number)
         news_app.mainloop()
-
-
     
     def loginPage(self):
         self.destroy()
@@ -1380,7 +908,6 @@ class NewsAppInfographics(ctk.CTk):
         news_app = NewsAppDashboardProfile(self.login_number)
         news_app.mainloop()
 
-
 class Graph(tk.Tk):
     def __init__(self, title, list_x, list_y):
         super().__init__()
@@ -1388,22 +915,16 @@ class Graph(tk.Tk):
         self.title(self.text)
         self.list_x= list_x
         self.list_y = list_y
-
         self.plot_types = ['Line Plot', 'Bar Plot', 'Scatter Plot']
         self.plot_type_var = tk.StringVar(value=self.plot_types[0])
         self.plot_menu = tk.OptionMenu(self, self.plot_type_var, *self.plot_types, command=self.plot_type_select)
         self.plot_menu.pack(padx=10, pady=10)
-
         self.figure = Figure(figsize=(6, 4), dpi=100)
         self.axes = self.figure.add_subplot()
-
         self.figure_canvas = FigureCanvasTkAgg(self.figure, self)
         self.figure_canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
         self.load_button = tk.Button(self, text='Load Graph', command=self.load_data)
         self.load_button.pack(padx=5, pady=5)
-
-
         NavigationToolbar2Tk(self.figure_canvas, self)
 
     def load_data(self):
@@ -1422,10 +943,8 @@ class Graph(tk.Tk):
             self.axes.scatter(self.x_values, self.y_values)
         self.axes.set_title(self.text)
         self.axes.set_ylabel(' Percentage %')
-        self.axes.set_xlabel('Years')
-  
+        self.axes.set_xlabel('Years')  
         self.figure_canvas.draw()
-
 
 if __name__ == "__main__":
     App().mainloop()
