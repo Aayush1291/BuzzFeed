@@ -88,26 +88,34 @@ class RegistrationPage(ctk.CTkFrame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
+        self.selected_interests = []  # Store selected interests
         self.components()
-    def connection(self, name, email_address, password):
-        self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp')
 
-        self.cursor = self.db.cursor()   
+    def connection(self, name, email_address, password, interests):
+        try:
+            self.db = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='aayush1291',
+                database='newsapp'
+            )
+            self.cursor = self.db.cursor()
 
+            interest_str = ", ".join(interests)  # Convert list to string
 
-        query = "INSERT INTO users(name, email_address, password) VALUES (%s, %s, %s)"
+            query = "INSERT INTO users(name, email_address, password, interest) VALUES (%s, %s, %s, %s)"
+            val = (name, email_address, password, interest_str)
 
-        val = (name, email_address, password)
+            self.cursor.execute(query, val)
+            self.db.commit()
+            messagebox.showinfo(message="Registration Successful")
 
-        self.cursor.execute(query, val)
-        self.db.commit()
+        except mysql.connector.Error as err:
+            messagebox.showerror(message=f"Database Error: {err}")
 
-        self.cursor.close()
-        self.db.close()
+        finally:
+            self.cursor.close()
+            self.db.close()
 
     def components(self):
         self.Login_label = tk.Label(self, text='Registration', foreground='white',
@@ -116,7 +124,7 @@ class RegistrationPage(ctk.CTkFrame):
         self.Login_label.grid(row=0, column=1, pady=30)
 
         self.NameLabel = tk.Label(self, text='Name : ', foreground='white',
-                                  font=('Times new Roman', 17),
+                                  font=('Times New Roman', 17),
                                   background='#242424', padx=5, pady=5)
         self.NameLabel.grid(row=1, column=0, padx=20, pady=20, sticky="ew")
 
@@ -124,84 +132,110 @@ class RegistrationPage(ctk.CTkFrame):
         self.name_input.grid(row=1, column=1, pady=10, sticky="ew")
 
         self.email_label = tk.Label(self, text='Email address : ', foreground='white',
-                                    font=('Times new Roman', 17),
+                                    font=('Times New Roman', 17),
                                     background='#242424', padx=5, pady=5)
-        self.email_label.grid(row=2, column=0, padx=20, pady=50, sticky="ew")
+        self.email_label.grid(row=2, column=0, padx=20, pady=20, sticky="ew")
 
-        self.email_input = ctk.CTkEntry(self, placeholder_text='enter email')
+        self.email_input = ctk.CTkEntry(self, placeholder_text='Enter email')
         self.email_input.grid(row=2, column=1, pady=10, sticky="ew")
 
         self.Password_Label = tk.Label(self, text='Password :', foreground='white',
-                                       font=('Times new Roman', 17),
+                                       font=('Times New Roman', 17),
                                        background='#242424', padx=5, pady=5)
         self.Password_Label.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
 
         self.password_input = ctk.CTkEntry(self, placeholder_text='Enter Password', show='*')
         self.password_input.grid(row=3, column=1, pady=10, sticky="ew")
 
-        self.register_button = ctk.CTkButton(self, text='Register Here', command=self.register)
-        self.register_button.grid(row=6, column=1, pady=10)
+        self.Interest_Label = tk.Label(self, text='Interest :', foreground='white',
+                                       font=('Times New Roman', 17),
+                                       background='#242424', padx=5, pady=5)
+        self.Interest_Label.grid(row=4, column=0, padx=20, pady=10, sticky="w")
 
-        self.login_button = ctk.CTkButton(self, text='Login', command=self.button_event)
-        self.login_button.grid(row=6, column=1, pady=30)
+        self.checkboxes()
+
+    def checkboxes(self):
+        self.checkboxes_list = {
+            "Sports": tk.IntVar(),
+            "Finance": tk.IntVar(),
+            "Entertainment": tk.IntVar(),
+            "World": tk.IntVar(),
+            "Politics": tk.IntVar(),
+            "Science/Tech": tk.IntVar(),
+        }
+
+        self.checkbox_widgets = []
+        row_num = 4
+        col_num = 1
+
+        for index, (label, var) in enumerate(self.checkboxes_list.items()):
+            checkbox = ctk.CTkCheckBox(self, text=label, variable=var,
+                                    fg_color='#47574F', font=('Helvetica', 18, 'bold'))
+            checkbox.grid(row=row_num, column=col_num, pady=5, padx=5, sticky="w")
+            self.checkbox_widgets.append(checkbox)
+
+            col_num += 1
+            if col_num > 2:
+                col_num = 1
+                row_num += 1  # Move to the next row
+
+        self.register_button = ctk.CTkButton(self, text='Register Here', command=self.button_event)
+        self.register_button.grid(row=row_num + 1, column=1, pady=20)  # Pushed below checkboxes
+
+    def get_selected_interests(self):
+        return [label for label, var in self.checkboxes_list.items() if var.get() == 1]
 
     def already_exist(self, email_address):
-        self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp')
+        try:
+            self.db = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='aayush1291',
+                database='newsapp'
+            )
+            self.cursor = self.db.cursor()
 
-        self.cursor = self.db.cursor()   
-        query = "SELECT * from users where email_address = %s"
+            query = "SELECT * FROM users WHERE email_address = %s"
+            self.cursor.execute(query, (email_address,))
+            return self.cursor.fetchone() is not None
 
-        self.cursor.execute(query, (email_address,))
-        ans = self.cursor.fetchone()
-        if ans is not None:
-            return True
-        else :
+        except mysql.connector.Error as err:
+            messagebox.showerror(message=f"Database Error: {err}")
             return False
 
-    def button_event(self): 
-        name = self.name_input.get()
-        password = self.password_input.get()
-        email = self.email_input.get()
+        finally:
+            self.cursor.close()
+            self.db.close()
 
-        
-        if not name.replace(' ', '').isalpha:
-            messagebox.showerror(message='Only Alphabets allowed in name field')
+    def button_event(self):
+        name = self.name_input.get().strip()
+        email = self.email_input.get().strip()
+        password = self.password_input.get().strip()
+        interests = self.get_selected_interests()
 
-        elif len(password) < 6 :
-            messagebox.showerror(message= 'Password needs to more than 6 chracters')
-
-        elif self.validate_email(email) == False:
-            messagebox.showerror(message= "Email not in valid format ")
-
-        elif self.already_exist(email) == True :
-            messagebox.showerror(message="This email is already registered ")
-
-        else :
-            self.connection(name, email, password)
-            self.destroy()
-            messagebox.showinfo(message= 'Login Successful')
-            # App().mainloop()
+        if not name.isalpha():
+            messagebox.showerror(message='Only alphabets allowed in the name field.')
+        elif len(password) < 6:
+            messagebox.showerror(message='Password must be at least 6 characters long.')
+        elif not self.validate_email(email):
+            messagebox.showerror(message='Invalid email format.')
+        elif self.already_exist(email):
+            messagebox.showerror(message='This email is already registered.')
+        elif not interests:
+            messagebox.showerror(message='Please select at least one interest.')
+        else:
+            self.connection(name, email, password, interests)
 
     def validate_email(self, email):
-
         pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-
-        if re.match(pattern, email):
-            return True
-        else:
-            return False
-
+        return re.match(pattern, email) is not None
 
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.geometry("500x600+350+150")
-        self.title("News App")
+        self.geometry("750x550")
+        self.title("BuzzFeed")
         self.container = tk.Frame(self)
         self.container.pack(side="top", fill="both", expand=True)
         self.container.grid_rowconfigure(0, weight=1)
@@ -225,6 +259,7 @@ class App(tk.Tk):
     def show_frame(self, page_name):
         frame = self.pages[page_name]
         frame.tkraise()
+
 
 
 class Dashboard(ctk.CTk):
@@ -510,28 +545,61 @@ class SearchEmail(ctk.CTk):
                     self.headlines_list.append(headline.text.strip())
                     self.links_list.append(href)
             self.GetEmailButton.grid(row = x + 1 , column = 0, columnspan = 5, pady = 10)
-
+    
     def sendemail(self):
-        # input_email = ctk.CTkInputDialog(text="Enter your email to confirm")
-        
-        my_email = "anewsinsights@gmail.com"
-        password = "hzxdwusuoiyekvso"
+        my_email = "buzzfeedproject123@gmail.com"
+        password = "elkx abhg pezs ofgn"
         to_email = self.email_address
         connection = smtplib.SMTP("smtp.gmail.com", 587)
         connection.starttls()
         connection.login(user=my_email, password=password)
-        # connection.sendmail(from_addr=my_email, to_addrs="yashbav24@gmail.com", msg="Hello there")
+        
         msg = MIMEMultipart()
         msg['From'] = my_email
         msg['To'] = to_email
-        msg['Subject'] = "Your Daily News Update" 
+        msg['Subject'] = "Your Daily News Update"
 
-        body = "Here are the latest news headlines:\n\n "
+        # HTML email body with purple color scheme
+        html_body = """
+        <html>
+            <body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <div style="background-color: #6B48FF; padding: 20px; color: white;">
+                        <h1 style="margin: 0; font-size: 24px;">Your Daily News Update</h1>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding: 20px;">
+                        <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">Here are the latest news headlines:</p>
+        """
+
+        # Add headlines and links
         for headline, link in zip(self.headlines_list, self.links_list):
-            body += f"\n<b>{headline}</b><br><a href='{link}'>{link}</a><br><br>"
-        
-        msg.attach(MIMEText(body, 'html'))
+            html_body += f"""
+                        <div style="margin-bottom: 20px;">
+                            <a href="{link}" style="text-decoration: none; color: #6B48FF; font-size: 18px; font-weight: bold; display: block; margin-bottom: 5px;">
+                                {headline}
+                            </a>
+                            <a href="{link}" style="text-decoration: none; color: #9333FF; font-size: 14px;">
+                                Read More →
+                            </a>
+                        </div>
+            """
 
+        # Footer
+        html_body += """
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="background-color: #f0edff; padding: 15px; text-align: center; color: #666; font-size: 12px;">
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+
+        msg.attach(MIMEText(html_body, 'html'))
         connection.sendmail(from_addr=my_email, to_addrs=to_email, msg=msg.as_string())
         messagebox.showinfo("Success", "Email sent successfully!")
         connection.quit()
@@ -768,264 +836,123 @@ class NewsCategory(ctk.CTk):
         self.destroy()
         App().mainloop()
 
-
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import messagebox
+import mysql.connector
+import requests
+from bs4 import BeautifulSoup
+import webview
 
 class NewsAppDashboardProfile(ctk.CTk):
     def __init__(self, login_number):
         super().__init__()
-
         self.title("News App Dashboard")
         self.geometry(f"{1000}x{600}")
         self.resizable(False, False)
-
+        
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=1)
         self.grid_rowconfigure((0, 1), weight=1)
+        
         self.initframes()
         self.initcomponents()
         
-
         self.login_number = login_number
-        print("Profile : " ,self.login_number)
+        print("Profile : ", self.login_number)
         self.profilecomponents(self.login_number)
-
-        self.x = 0
-        self.topics_selected = []
+        
         self.email_address = None
+        self.headline_list = []
+        self.href_list = []
+
     def initframes(self):
         self.sidebar_frame = ctk.CTkFrame(self, width=150, corner_radius=0)
-        self.sidebar_frame.grid(row=0, column=0, rowspan=5, sticky="nsew", columnspan = 2)
+        self.sidebar_frame.grid(row=0, column=0, rowspan=5, sticky="nsew", columnspan=2)
         self.sidebar_frame.grid_rowconfigure(5, weight=1)
-        self.sidebar_frame.grid_columnconfigure(0, weight = 1)
+        self.sidebar_frame.grid_columnconfigure(0, weight=1)
+        
         self.scrollable_frame = ctk.CTkScrollableFrame(self)
-        self.scrollable_frame.grid(row=0, column=2, sticky="nsew", rowspan = 10, columnspan = 10)
+        self.scrollable_frame.grid(row=0, column=2, sticky="nsew", rowspan=10, columnspan=10)
         self.scrollable_frame.grid_columnconfigure(1, weight=0)
 
     def initcomponents(self):
-        self.myprofile_label = ctk.CTkLabel(self.sidebar_frame, text="My Profile", font = ('Arial', 20, 'bold'))
-        self.myprofile_label.grid(row = 0, column = 0, pady = 20)
+        self.myprofile_label = ctk.CTkLabel(self.sidebar_frame, text="My Profile", font=('Arial', 20, 'bold'))
+        self.myprofile_label.grid(row=0, column=0, pady=20)
 
+        self.dashboard_button = tk.Button(self.sidebar_frame, text="Dashboard", height=3, font=('Arial', 14, 'bold'), 
+                                          background='#14476E', foreground='white', command=self.dashboard)
+        self.dashboard_button.grid(row=2, column=0, sticky='nsew', pady=15)
 
-        
+        self.search_button = tk.Button(self.sidebar_frame, text="Search News", height=3, font=('Arial', 14, 'bold'), 
+                                       background='#14476E', foreground='white', command=self.search_news)
+        self.search_button.grid(row=3, column=0, sticky='nsew', pady=15)
 
-        self.dashboard_button = tk.Button(self.sidebar_frame, text="Dashboard", height=3,  font = ('Arial', 14, 'bold'), background='#14476E', foreground= 'white',command = self.dashboard )
-        self.dashboard_button.grid(row=2, column=0, sticky= 'nsew', pady= 15)
+        self.category_button = tk.Button(self.sidebar_frame, text="News by Category", height=3, font=('Arial', 14, 'bold'), 
+                                         background='#14476E', foreground='white', command=self.news_by_category)
+        self.category_button.grid(row=4, column=0, sticky='new', pady=15)
 
-        self.search_button = tk.Button(self.sidebar_frame, text="Search News", height=3,  font = ('Arial', 14, 'bold'), background='#14476E', foreground= 'white',
-                                       command=self.search_news)
-        self.search_button.grid(row=3, column=0, sticky= 'nsew', pady= 15)
+        self.infographics_button = tk.Button(self.sidebar_frame, text="Infographics", height=3, font=('Arial', 14, 'bold'), 
+                                             background='#14476E', foreground='white', command=self.infographics)
+        self.infographics_button.grid(row=5, column=0, sticky='new', pady=15)
 
-        self.category_button = tk.Button(self.sidebar_frame, text="News by Category", height=3, font = ('Arial', 14, 'bold'), background='#14476E', foreground= 'white',
-                                         command=self.news_by_category)
-        self.category_button.grid(row=4, column=0, sticky= 'new', pady = 15)
-
-        self.infographics_button = tk.Button(self.sidebar_frame, text="Infographics", height=3, font = ('Arial', 14, 'bold'), background='#14476E', foreground= 'white',
-                                             command=self.infographics)
-        self.infographics_button.grid(row=5, column=0, sticky= 'new', pady = 15)
-
- 
-
-        self.Logout_button = tk.Button(self.sidebar_frame, text="Log out", height=1, font = ('Arial', 12, 'bold'), background='#14497E', foreground= 'white',
-                                       command=self.loginPage)
-        self.Logout_button.grid(row=7, column=0, sticky= 'ws', pady = 0)
+        self.logout_button = tk.Button(self.sidebar_frame, text="Log out", height=1, font=('Arial', 12, 'bold'), 
+                                       background='#14497E', foreground='white', command=self.loginPage)
+        self.logout_button.grid(row=7, column=0, sticky='ws', pady=0)
 
         self.my_profile_label = ctk.CTkLabel(self.scrollable_frame, text="My Profile", font=('Arial', 25, 'bold'))
         self.my_profile_label.grid(row=0, column=0, sticky='nsew')
-    
+
     def profilecomponents(self, login_number):
         self.scrollable_frame.grid_columnconfigure(0, weight=0)
         self.scrollable_frame.grid_columnconfigure(1, weight=1)
         self.scrollable_frame.grid_columnconfigure(2, weight=1)
-        # image_url = 'profilepic.jpeg'
-        # img = ImageTk.PhotoImage(Image.open(image_url))
-        # profile_label = ctk.CTkLabel(self.scrollable_frame, image = img, text= ' ')
-        # profile_label.grid(row = 1, column= 0, padx = 15, pady = 20, rowspan = 2)
-       
-        # self.image_uploader = ctk.CTkButton(self.scrollable_frame, text='upload image', command= self.image_selector)
-        # self.image_uploader.grid(row = 3, column = 0)
 
-
-
-        profile_name_label = ctk.CTkLabel(self.scrollable_frame, text= " Name : ", font = ('serif', 19, 'bold'))
-        profile_name_label.grid(row = 1, column = 1, sticky = 'nw', pady = 15)
+        profile_name_label = ctk.CTkLabel(self.scrollable_frame, text=" Name : ", font=('serif', 19, 'bold'))
+        profile_name_label.grid(row=1, column=1, sticky='nw', pady=15)
+        
         self.fetch_name(login_number)
-        # profile_no_of_articles_label = ctk.CTkLabel(self.scrollable_frame, text= "No of Articles Read :  2", font = ('serif', 19, 'bold'))
-        # profile_no_of_articles_label.grid(row = 2, column = 1, sticky = 'nw',  padx = 5)
-
-
-
-        self.option_tab = ctk.CTkTabview(self.scrollable_frame, width= 50, height= 455, border_color='white')
-        self.option_tab.add("My News")
-        self.option_tab.add("Bookmarks")
-
-        self.option_tab.grid(row = 4, column = 0, columnspan = 5, rowspan = 5, sticky = 'nsew')
         self.fetch_bookmarks(login_number)
-        self.fetch_mynews(login_number)
-        self.bookmarks_components(login_number)
-        self.my_news_components()
 
-    def image_selector(self):
-        image = ctk.filedialog.askopenfilename()
-        # user_img = ImageTk.PhotoImage(Image.open(image))
-        orignal_image = Image.open(image)
-        resized_image = orignal_image.resize((253, 243))
-        user_img = ImageTk.PhotoImage(resized_image)
-        # profile_label = ctk.CTkLabel(self.scrollable_frame, image = user_img, text= ' ')
-        # profile_label.grid(row = 1, column= 0, padx = 15, pady = 20, rowspan = 2)
-
-    def bookmarks_components(self, num):
-
-        # self.button = ctk.CTkButton(master = self.option_tab.tab("Bookmarks"), text= "test button")
-        # self.button.grid(row = 0, column = 0, sticky = 'nsew')
-        self.login_number = num
-        if len(self.headline_list) > 0:
-            x = 2
-            for index, (headline, href) in enumerate(zip(self.headline_list, self.href_list), start=1):
-                a = headline 
-
-                headline_button = ctk.CTkButton(master = self.option_tab.tab("Bookmarks"), text=a, width= 30,
-                                                font=ctk.CTkFont(size=20, weight="bold"),
-                                                command=lambda idx=index, href=href: self.show_headline(href))
-                headline_button._text_label.configure(wraplength=499)
-                headline_button.grid(row=index + 3, column= 0 ,  sticky="nsew", columnspan = 4, pady = (20, 0))
-
-                    
-    def my_news_components(self):
-        self.topics = []
-
-        
-
-        def my_news_popup():
-            topic_input = ctk.CTkInputDialog(text="Enter Topics you wanna add")
-            input_topic = topic_input.get_input()
-            if input_topic: 
-                self.topics.append(input_topic)
-            print(self.topics)
-            topic_input.destroy()
-            add_topics()
-
-        self.tags_button = ctk.CTkButton(master = self.option_tab.tab("My News"), text = 'Add Topics', width = 5, command=my_news_popup)
-        self.tags_button.grid(row = 0, column = 0, sticky  = 'n')
-        
-        def add_topics():
-            # print(self.x)
-            if self.topics:
-                for topic in self.topics :
-                    print(self.x)
-                    if topic not in self.topics_selected :    
-                        topic_Label = ctk.CTkLabel(master = self.option_tab.tab("My News"), text = topic, font= ('Arial', 20, 'bold') )
-                        topic_Label.grid(row = self.x + 2, column = 0, sticky = 'nw')
-                        line_label = ctk.CTkLabel(master = self.option_tab.tab("My News"), text = '-'*50)
-
-                        line_label.grid(row = self.x + 1 , column = 0, sticky = 'nsew')
-                        self.getnews(topic)
-                        self.topics_selected.append(topic)
-                        self.x = self.x + 10
-                    # else :
-                    #     messagebox.showerror(message="Topic Already selected")
-
-            self.update()
-
-    def getnews(self, query):
-        headlines_list = []
-        news_link_list = []
-        no = 5
-        if query == '':
-            messagebox.showinfo('Inavlid Query',message='Empty Query, Please enter something')
-
-        if query.isdigit():
-            messagebox.showinfo('Invalid Query', message= 'Seacrh Query cannot consist of numbers')
-
-        else :
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36 Edge/18.19582"}
-            url = "https://www.bing.com/news/search?q={}"
-            html = requests.get(url.format(query), headers=headers)
-            soup = BeautifulSoup(html.text, "lxml")
-
-            for result in soup.select('.card-with-cluster'):
-                headline = result.select_one('.title')
-                if headline.text.strip():
-                    href = headline.get('href')
-                    self.headlineButton = ctk.CTkButton(master = self.option_tab.tab("My News"), text = headline.text.strip(),
-                                                         font= ('Arial', 20, 'bold'), 
-                                                        command= lambda href = href : self.GotoNews(href))
-                    self.headlineButton._text_label.configure(wraplength=499)
-                    self.headlineButton.grid(row = self.x + 10, column = 0, pady = (20, 0), sticky = 'nsew', columnspan = 6)
-                    # print(headline.text.strip())
-                    headlines_list.append(headline.text.strip())
-                    news_link_list.append(href)
-                
-                    print(self.x)
-                    self.x += 1
-            
-                no -= 1
-                if no == 0:
-                    break
-            self.update()
-            # self.GetEmailButton.grid(row = x , column = 0, columnspan = 5, pady = 10)
-        print(self.topics)
-        print(self.topics[-1])
-        print(headlines_list)
-        print(self.login_number)
-        self.add_in_topics_database(self.login_number, self.topics[-1], headlines_list, news_link_list)
-
-    def add_in_topics_database(self, login_number, topic, headlines_list, news_link_list):
-        self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp'
-        )
-        self.cursor3 = self.db.cursor()
-
-        query4 = "INSERT into topics (user_id, topic_name, selected_news_headline, selected_news_link, emailed) VALUES (%s, %s, %s, %s, %s)"
-        for headline, href in zip(headlines_list, news_link_list):
-            self.cursor3.execute(query4, (login_number , topic, headline, href, 0 ) )
-        self.db.commit()
-
-    def show_headline(self, link):
-
-        webview.create_window('News Headline', link)
-        webview.start()
-
-    def GotoNews(self, link):
-        pass
+        # Display bookmarks directly below the label
+        self.display_bookmarks()
 
     def fetch_name(self, login_number):
         self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp'
+            host='localhost',
+            user='root',
+            password='aayush1291',
+            database='newsapp'
         )
-        self.cursor2 = self.db.cursor()
-        query2 = "SELECT name, email_address from users where id = %s"
-        self.cursor2.execute(query2, (login_number,))  
-        name_tuple = self.cursor2.fetchone()
-        if name_tuple:  
-            name = name_tuple[0]
-            self.email_address = name_tuple[1]  
-            print(self.email_address)
+        self.cursor = self.db.cursor()
+        query = "SELECT name, email_address, interest FROM users WHERE id = %s"
+        self.cursor.execute(query, (login_number,))
+        
+        for row in self.cursor.fetchall():
+            name, email, interest = row
+            self.email_address = email
             profile_name_label = ctk.CTkLabel(self.scrollable_frame, text=" Name : " + name, font=('serif', 19, 'bold'))
             profile_name_label.grid(row=1, column=1, sticky='nw', pady=15)
-        self.cursor2.close()
+            profile_email_label = ctk.CTkLabel(self.scrollable_frame, text=" Email : " + email, font=('serif', 19, 'bold'))
+            profile_email_label.grid(row=2, column=1, sticky='nw', pady=15)
+            profile_interest_label = ctk.CTkLabel(self.scrollable_frame, text=" Interest : " + interest, font=('serif', 19, 'bold'))
+            profile_interest_label.grid(row=3, column=1, sticky='nw', pady=15)
+            profile_bookmark_label = ctk.CTkLabel(self.scrollable_frame, text=" Bookmarks : " ,font=('serif', 19, 'bold'))
+            profile_bookmark_label.grid(row=4, column=1, sticky='nw', pady=15)
+        
+        self.cursor.close()
         self.db.close()
 
     def fetch_bookmarks(self, login_number):
-
-        
         self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp'
+            host='localhost',
+            user='root',
+            password='aayush1291',
+            database='newsapp'
         )
-
         self.cursor = self.db.cursor()
-
-        query = "SELECT headline, href from bookmarks where user_id = %s"
-        
-        self.cursor.execute(query, (login_number,))    
+        query = "SELECT headline, href FROM bookmarks WHERE user_id = %s"
+        self.cursor.execute(query, (login_number,))
 
         self.headline_list = []
         self.href_list = []
@@ -1037,55 +964,23 @@ class NewsAppDashboardProfile(ctk.CTk):
         self.cursor.close()
         self.db.close()
 
-    def fetch_mynews(self, login_number):
-        self.x = 0
-        self.db = mysql.connector.connect(
-            host = 'localhost',
-            user = 'root',
-            password = 'aayush1291',
-            database = 'newsapp'
-        )
+    def display_bookmarks(self):
+        if len(self.headline_list) > 0:
+            for index, (headline, href) in enumerate(zip(self.headline_list, self.href_list), start=1):
+                headline_button = ctk.CTkButton(self.scrollable_frame, text=headline, width=30,
+                                                font=ctk.CTkFont(size=20, weight="bold"),
+                                                command=lambda href=href: self.show_headline(href))
+                headline_button._text_label.configure(wraplength=499)
+                headline_button.grid(row=index + 4, column=0, sticky="nsew", columnspan=5, pady=(20, 0))
 
-        self.cursor4 = self.db.cursor()
-        query4 = "SELECT topic_name,  selected_news_headline, selected_news_link from topics where user_id = %s"
-        self.cursor4.execute(query4, (login_number,))    
-        # print(self.cursor4.fetchall())
-        previous_topic = None
-
-        # for topic, headline, href in self.cursor4.fetchall():
-        #     if topic != previous_topic:
-        #         topic_Label = ctk.CTkLabel(master=self.option_tab.tab("My News"), text=topic, font=('Arial', 20, 'bold'))
-        #         topic_Label.grid(row= self.x + 2, column=0, sticky='nw')
-        #         # line_label = ctk.CTkLabel(master=self.option_tab.tab("My News"), text='-' * 50)
-        #         # line_label.grid(row=self.x + 1, column=0, sticky='nsew')
-        #         self.x += 10
-        #         previous_topic = topic
-
-        #     headline_button = ctk.CTkButton(master=self.option_tab.tab("My News"), text=headline,
-        #                                      font=('Arial', 20, 'bold'), command=lambda h=href: self.GotoNews(h))
-        #     headline_button._text_label.configure(wraplength=499)
-        #     headline_button.grid(row=self.x + 10, column=0, pady=(20, 0), sticky='nsew', columnspan=6)
-        #     self.x += 1
-        done_topic = []  # List to keep track of displayed topics
-
-        for topic, headline, href in self.cursor4.fetchall():
-            if topic not in done_topic:  # Check if topic has been displayed already
-                topic_label = ctk.CTkLabel(master=self.option_tab.tab("My News"), text=topic, font=('Arial', 20, 'bold'))
-                topic_label.grid(row=self.x + 3, column=0, sticky='nw', pady = 20)
-                done_topic.append(topic)  # Add topic to the list
-                self.x += 1  # Increment row index
-
-            headline_button = ctk.CTkButton(master=self.option_tab.tab("My News"), text=headline,
-                                             font=('Arial', 20, 'bold'), command=lambda h=href: self.GotoNews(h))
-            headline_button._text_label.configure(wraplength=499)
-            headline_button.grid(row=self.x + 3, column=0, pady=(20, 0), sticky='nsew', columnspan=6)
-            self.x += 1  # Increment row index for news headline button
+    def show_headline(self, link):
+        webview.create_window('News Headline', link)
+        webview.start()
 
     def dashboard(self):
         self.fetch_name(self.login_number)
         email = self.email_address
         self.destroy()
-        # Popen(['python', 'dashboard4.py', self.login_number])
         print(email)
         news_app = Dashboard(None, self.login_number, email)
         news_app.mainloop()
@@ -1111,18 +1006,13 @@ class NewsAppDashboardProfile(ctk.CTk):
         news_app = NewsAppInfographics(email, self.login_number)
         news_app.mainloop()
 
-
     def loginPage(self):
         self.destroy()
         App().mainloop()
 
-
     def GotoNews(self, link):
         webview.create_window('News Headline', link)
         webview.start()
-
-
-
 
 class NewsAppInfographics(ctk.CTk):
     def __init__(self, email_id, login_number):
