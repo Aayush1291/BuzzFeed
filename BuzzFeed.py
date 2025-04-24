@@ -60,7 +60,7 @@ class LoginPage(ctk.CTkFrame):
         db = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='aayush1291',
+            password='YOUR_PASSWORD',
             database='newsapp'
         )
 
@@ -96,7 +96,7 @@ class RegistrationPage(ctk.CTkFrame):
             self.db = mysql.connector.connect(
                 host='localhost',
                 user='root',
-                password='aayush1291',
+                password='YOUR_PASSWORD',
                 database='newsapp'
             )
             self.cursor = self.db.cursor()
@@ -190,7 +190,7 @@ class RegistrationPage(ctk.CTkFrame):
             self.db = mysql.connector.connect(
                 host='localhost',
                 user='root',
-                password='aayush1291',
+                password='YOUR_PASSWORD',
                 database='newsapp'
             )
             self.cursor = self.db.cursor()
@@ -417,7 +417,7 @@ class Dashboard(ctk.CTk):
         self.db = mysql.connector.connect(
             host = 'localhost',
             user = 'root',
-            password = 'aayush1291',
+            password = 'YOUR_PASSWORD',
             database = 'newsapp'
         )
         # print(self.db)
@@ -921,7 +921,7 @@ class NewsAppDashboardProfile(ctk.CTk):
         self.db = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='aayush1291',
+            password='YOUR_PASSWORD',
             database='newsapp'
         )
         self.cursor = self.db.cursor()
@@ -947,7 +947,7 @@ class NewsAppDashboardProfile(ctk.CTk):
         self.db = mysql.connector.connect(
             host='localhost',
             user='root',
-            password='aayush1291',
+            password='YOUR_PASSWORD',
             database='newsapp'
         )
         self.cursor = self.db.cursor()
